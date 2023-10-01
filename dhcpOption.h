@@ -11,7 +11,7 @@ class DhcpOption
 protected:
     const regex ipAddrRegex = regex("^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$");
     const regex macAddrRegex = regex("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})|([0-9a-fA-F]{4}\\.[0-9a-fA-F]{4}\\.[0-9a-fA-F]{4})$");
-    static unsigned char code;
+    unsigned char code;
     unsigned char* data;
     unsigned int dataLength;
     static bool isCodeValid(unsigned short int code);
@@ -19,18 +19,19 @@ public:
     DhcpOption();
     ~DhcpOption();
     unsigned int getLength();
-    static unsigned char getCode();
+    unsigned char getCode();
     static unsigned char getMessageType(vector<DhcpOption*> dhcpOptions);
     static string getRequestedIpAddr(vector<DhcpOption*> dhcpOptions);
-    static unsigned int getListLength(vector<DhcpOption*> dhcpOptions);
+    static unsigned int getListLengthInBytes(vector<DhcpOption*> dhcpOptions);
+    static unsigned char* listToBytes(vector<DhcpOption*> dhcpOptions, unsigned char* output);
     static bool hasEnd(vector<DhcpOption*> dhcpOptions);
     static unsigned char* listToBytes(vector<DhcpOption*> dhcpOptions);
-    static DhcpOption fromBytes(unsigned char* bytes);
+    static DhcpOption* fromBytes(unsigned char* bytes);
+    virtual unsigned char* asBytes(unsigned char* output);
     virtual unsigned char* asBytes();
 };
 class CustomDhcpOption : public DhcpOption {
 public:
-    unsigned int code;
     CustomDhcpOption(unsigned int code, unsigned char* data, unsigned int dataLength) {
         this->code = code;
         setData(data, dataLength);

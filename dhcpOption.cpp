@@ -1,5 +1,5 @@
 #include "dhcpOption.h"
-unsigned char DhcpOption::code = 0;
+//const unsigned char DhcpOption::code = 0;
 DhcpOption::DhcpOption(){
     this->data = nullptr;
 }
@@ -25,7 +25,7 @@ unsigned char DhcpOption::getCode() {
 unsigned char DhcpOption::getMessageType(vector<DhcpOption*> dhcpOptions) {
     for (int i = 0; i < dhcpOptions.size(); i++)
     {
-        if (dhcpOptions[i]->getCode() == MessageType::getCode()) {
+        if (dhcpOptions[i]->getCode() == 53) {
             return ((MessageType*)dhcpOptions[i])->getData();
         }
     }
@@ -35,14 +35,14 @@ unsigned char DhcpOption::getMessageType(vector<DhcpOption*> dhcpOptions) {
 string DhcpOption::getRequestedIpAddr(vector<DhcpOption*> dhcpOptions) {
     for (int i = 0; i < dhcpOptions.size(); i++)
     {
-        if (dhcpOptions[i]->getCode() == RequestedIpAddr::getCode()) {
+        if (dhcpOptions[i]->getCode() == 50) {
             return ((RequestedIpAddr*)dhcpOptions[i])->getData();
         }
     }
     return "";
 }
 
-unsigned int getListLength(vector<DhcpOption*> dhcpOptions) {
+unsigned int DhcpOption::getListLengthInBytes(vector<DhcpOption*> dhcpOptions) {
     unsigned int output = 0;
     for (int i = 0; i < dhcpOptions.size(); i++)
     {
@@ -54,37 +54,32 @@ unsigned int getListLength(vector<DhcpOption*> dhcpOptions) {
 bool DhcpOption::hasEnd(vector<DhcpOption*> dhcpOptions) {
     for (int i = 0; i < dhcpOptions.size(); i++)
     {
-        if (dhcpOptions[i]->getCode() == End::getCode()) {
+        if (dhcpOptions[i]->getCode() == 255) {
             return true;
         }
     }
     return false;
 }
 
-unsigned char* DhcpOption::listToBytes(vector<DhcpOption*> dhcpOptions) {
-    unsigned int totalLength = 1;
-    for (int i = 0; i < dhcpOptions.size() - 1; i++)
-    {
-        totalLength += dhcpOptions[i]->getLength() + 2;
-    }
-    unsigned char* output = new unsigned char(totalLength);
-    unsigned int j = 0;
+unsigned char* DhcpOption::listToBytes(vector<DhcpOption*> dhcpOptions, unsigned char* output) {
+    if (output == nullptr) return nullptr;
+    unsigned int position = 0;
     for (int i = 0; i < dhcpOptions.size(); i++)
     {
-        unsigned char* optionAsBytes = dhcpOptions[i]->asBytes();
-        for (int l = 0; l < dhcpOptions[i]->getLength(); l++, j++)
-        {
-            output[j] = optionAsBytes[l];
-        }
+        dhcpOptions[i]->asBytes(output+ position);
+        position+=dhcpOptions[i]->getLength()+2;
     }
     return output;
 }
+unsigned char* DhcpOption::listToBytes(vector<DhcpOption*> dhcpOptions) {
+    return listToBytes(dhcpOptions, new unsigned char[getListLengthInBytes(dhcpOptions)]);
+}
 
-DhcpOption DhcpOption::fromBytes(unsigned char* bytes) {
+DhcpOption* DhcpOption::fromBytes(unsigned char* bytes) {
     switch (bytes[0])
     {
         case 1:
-            return SubnetMask(utility::ipFromBytes(bytes + 2));
+            return (DhcpOption*)new SubnetMask(utility::ipFromBytes(bytes + 2));
         case 3:
         {
             vector<string> routers = vector<string>(bytes[1] / utility::ipLengthInBytes);
@@ -92,7 +87,7 @@ DhcpOption DhcpOption::fromBytes(unsigned char* bytes) {
             {
                 routers.push_back(utility::ipFromBytes((bytes + 2) + (i * utility::ipLengthInBytes)));
             }
-            return Router(routers);
+            return (DhcpOption*)new Router(routers);
         }
         case 6:
         {
@@ -101,7 +96,7 @@ DhcpOption DhcpOption::fromBytes(unsigned char* bytes) {
             {
                 domainNameServers.push_back(utility::ipFromBytes((bytes + 2) + (i * utility::ipLengthInBytes)));
             }
-            return DomainNameServer(domainNameServers);
+            return (DhcpOption*)new DomainNameServer(domainNameServers);
         }
         case 12:
         {
@@ -110,16 +105,16 @@ DhcpOption DhcpOption::fromBytes(unsigned char* bytes) {
             {
                 clientHostName[i] = bytes[2 + i];
             }
-            return ClientHostName(clientHostName);
+            return (DhcpOption*)new ClientHostName(clientHostName);
         }
         case 50:
-            return RequestedIpAddr(utility::ipFromBytes(bytes + 2));
+            return (DhcpOption*)new RequestedIpAddr(utility::ipFromBytes(bytes + 2));
         case 51:
-            return LeaseTime((unsigned int)(bytes[2] << 24 + bytes[3] << 16 + bytes[4] << 8 + bytes[5]));
+            return (DhcpOption*)new LeaseTime((unsigned int)(bytes[2] << 24 + bytes[3] << 16 + bytes[4] << 8 + bytes[5]));
         case 53:
-            return MessageType(bytes[2]);
+            return (DhcpOption*)new MessageType(bytes[2]);
         case 255:
-            return End();
+            return (DhcpOption*)new End();
         default:
         {
             unsigned int code = bytes[0];
@@ -129,19 +124,21 @@ DhcpOption DhcpOption::fromBytes(unsigned char* bytes) {
             {
                 data[i] = bytes[2 + i];
             }
-            return CustomDhcpOption(code, data, dataLength);
+            return (DhcpOption*)new CustomDhcpOption(code, data, dataLength);
         }
 
     }
 };
-
-unsigned char* DhcpOption::asBytes() {
-    unsigned char* output = new unsigned char(2 + this->dataLength);
-    output[0] = code;
-    output[1] = dataLength;
-    for (int i = 2; i < dataLength + 2; i++)
+unsigned char* DhcpOption::asBytes(unsigned char* output) {
+    output[0] = this->code;
+    output[1] = (unsigned char)dataLength;
+    for (int i = 0; i < dataLength; i++)
     {
-        output[i] = data[i];
+        output[i+2] = data[i];
     }
     return output;
+}
+
+unsigned char* DhcpOption::asBytes() {
+    return asBytes(new unsigned char[2 + this->dataLength]);
 }

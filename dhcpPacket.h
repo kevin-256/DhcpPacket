@@ -22,7 +22,10 @@ protected:
     vector<DhcpOption*> dhcpOptions;
 public:
     DhcpPacket(unsigned char op, unsigned int transactionId, string clientIpAddr, string offeredIpAddr, string serverIpAddr, string gatewayIpAddr, string clientMacAddr, vector<DhcpOption*> dhcpOptions);
-    static DhcpPacket fromBytes(unsigned char* bytes);
+    static DhcpPacket* fromBytes(unsigned char* bytes);
+    static unsigned char* toBytes(DhcpPacket dhcpPacket, unsigned char* output);
     static unsigned char* toBytes(DhcpPacket dhcpPacket);
     static unsigned char getMessageType(DhcpPacket dhcpPacket);
+    unsigned char* toBytes();
+    unsigned int getLength();
 };

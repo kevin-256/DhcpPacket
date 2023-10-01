@@ -41,7 +41,7 @@ public:
         return output;
     };
     static unsigned char* ipToBytes(string ipAddr) {
-        return ipToBytes(ipAddr, new unsigned char(ipLengthInBytes));
+        return ipToBytes(ipAddr, new unsigned char[ipLengthInBytes]);
     };
     static string macFromBytes(unsigned char* bytes) {
         string output = "";
@@ -63,7 +63,7 @@ public:
         return output;
     };
     static unsigned char* macToBytes(string macAddr) {
-        return macToBytes(macAddr, new unsigned char(macLengthInBytes));
+        return macToBytes(macAddr, new unsigned char[macLengthInBytes]);
     };
 };
 
