@@ -4,7 +4,9 @@ DhcpOption::DhcpOption(){
     this->data = nullptr;
 }
 DhcpOption::~DhcpOption() {
-    delete[] this->data;
+    if (this->data != nullptr) {
+        delete [] this->data;
+    }
 }
 
 bool DhcpOption::isCodeValid(unsigned short int code) {

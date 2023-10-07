@@ -95,7 +95,7 @@ public:
         int j = 0;
         for (int i = 0; i < routers.size(); i++)
         {
-             utility::ipToBytes(routers[i], &data[i * utility::ipLengthInBytes]);
+             utility::ipToBytes(routers[i], data+(i * utility::ipLengthInBytes));
         }
         
     }
@@ -108,7 +108,78 @@ public:
         return output;
     }
 };
+//4
+class TimeServer : public DhcpOption {
+public:
+    TimeServer(vector<string> timeServers) {
+        this->code = 4;
+        setData(timeServers);
+    }
+    void setData(vector<string> timeServers) {
+        this->dataLength = timeServers.size() * utility::ipLengthInBytes;
+        for (int i = 0; i < timeServers.size(); i++)
+        {
+            if (!regex_match(timeServers[i], ipAddrRegex)) { throw std::invalid_argument("Ip address must a string like 192.168.1.1"); }
+        }
+        if (this->data == nullptr) {
+            this->data = new unsigned char[this->dataLength];
+        }
+        else {
+            delete this->data;
+            this->data = new unsigned char[this->dataLength];
+        }
+        int j = 0;
+        for (int i = 0; i < timeServers.size(); i++)
+        {
+            utility::ipToBytes(timeServers[i], &data[i * utility::ipLengthInBytes]);
+        }
 
+    }
+    vector<string> getData() {
+        vector<string> output = vector<string>(this->dataLength / utility::ipLengthInBytes);
+        for (int i = 0; i < this->dataLength / utility::ipLengthInBytes; i++)
+        {
+            output[i] = utility::ipFromBytes(&this->data[i * utility::ipLengthInBytes]);
+        }
+        return output;
+    }
+};
+//5
+class NameServer : public DhcpOption {
+public:
+    NameServer(vector<string> nameServers) {
+        this->code = 5;
+        setData(nameServers);
+    }
+    void setData(vector<string> nameServers) {
+        this->dataLength = nameServers.size() * utility::ipLengthInBytes;
+        for (int i = 0; i < nameServers.size(); i++)
+        {
+            if (!regex_match(nameServers[i], ipAddrRegex)) { throw std::invalid_argument("Ip address must a string like 192.168.1.1"); }
+        }
+        if (this->data == nullptr) {
+            this->data = new unsigned char[this->dataLength];
+        }
+        else {
+            delete this->data;
+            this->data = new unsigned char[this->dataLength];
+        }
+        int j = 0;
+        for (int i = 0; i < nameServers.size(); i++)
+        {
+            utility::ipToBytes(nameServers[i], &data[i * utility::ipLengthInBytes]);
+        }
+
+    }
+    vector<string> getData() {
+        vector<string> output = vector<string>(this->dataLength / utility::ipLengthInBytes);
+        for (int i = 0; i < this->dataLength / utility::ipLengthInBytes; i++)
+        {
+            output[i] = utility::ipFromBytes(&this->data[i * utility::ipLengthInBytes]);
+        }
+        return output;
+    }
+};
 //6
 class DomainNameServer : public DhcpOption {
 public:
@@ -145,7 +216,78 @@ public:
         return output;
     }
 };
+//7
+class LogServer : public DhcpOption {
+public:
+    LogServer(vector<string> logServers) {
+        this->code = 7;
+        setData(logServers);
+    }
+    void setData(vector<string> logServers) {
+        this->dataLength = logServers.size() * utility::ipLengthInBytes;
+        for (int i = 0; i < logServers.size(); i++)
+        {
+            if (!regex_match(logServers[i], ipAddrRegex)) { throw std::invalid_argument("Ip address must a string like 192.168.1.1"); }
+        }
+        if (this->data == nullptr) {
+            this->data = new unsigned char[this->dataLength];
+        }
+        else {
+            delete this->data;
+            this->data = new unsigned char[this->dataLength];
+        }
+        int j = 0;
+        for (int i = 0; i < logServers.size(); i++)
+        {
+            utility::ipToBytes(logServers[i], &data[i * utility::ipLengthInBytes]);
+        }
 
+    }
+    vector<string> getData() {
+        vector<string> output = vector<string>(this->dataLength / utility::ipLengthInBytes);
+        for (int i = 0; i < this->dataLength / utility::ipLengthInBytes; i++)
+        {
+            output[i] = utility::ipFromBytes(&this->data[i * utility::ipLengthInBytes]);
+        }
+        return output;
+    }
+};
+//8
+class QuotesServer : public DhcpOption {
+public:
+    QuotesServer(vector<string> quotesServers) {
+        this->code = 8;
+        setData(quotesServers);
+    }
+    void setData(vector<string> logServers) {
+        this->dataLength = logServers.size() * utility::ipLengthInBytes;
+        for (int i = 0; i < logServers.size(); i++)
+        {
+            if (!regex_match(logServers[i], ipAddrRegex)) { throw std::invalid_argument("Ip address must a string like 192.168.1.1"); }
+        }
+        if (this->data == nullptr) {
+            this->data = new unsigned char[this->dataLength];
+        }
+        else {
+            delete this->data;
+            this->data = new unsigned char[this->dataLength];
+        }
+        int j = 0;
+        for (int i = 0; i < logServers.size(); i++)
+        {
+            utility::ipToBytes(logServers[i], &data[i * utility::ipLengthInBytes]);
+        }
+
+    }
+    vector<string> getData() {
+        vector<string> output = vector<string>(this->dataLength / utility::ipLengthInBytes);
+        for (int i = 0; i < this->dataLength / utility::ipLengthInBytes; i++)
+        {
+            output[i] = utility::ipFromBytes(&this->data[i * utility::ipLengthInBytes]);
+        }
+        return output;
+    }
+};
 //12
 class ClientHostName : public DhcpOption {
 public:
@@ -236,13 +378,24 @@ public:
 //53
 class MessageType : public DhcpOption {
 public:
-    //1 DHCPDISCOVER()
-    //2 DHCPOFFER()
-    //3 DHCPREQUEST()
-    //4 DHCPDECLINE()
-    //5 DHCPACK()
-    //6 DHCPNAK()
-    //7 DHCPRELEASE()
+    //1	    DHCPDISCOVER
+    //2	    DHCPOFFER
+    //3	    DHCPREQUEST
+    //4	    DHCPDECLINE
+    //5	    DHCPACK
+    //6	    DHCPNAK
+    //7	    DHCPRELEASE
+    //8	    DHCPINFORM
+    //9	    DHCPFORCERENEW
+    //10	DHCPLEASEQUERY
+    //11	DHCPLEASEUNASSIGNED
+    //12	DHCPLEASEUNKNOWN
+    //13	DHCPLEASEACTIVE
+    //14	DHCPBULKLEASEQUERY
+    //15	DHCPLEASEQUERYDONE
+    //16	DHCPACTIVELEASEQUERY
+    //17	DHCPLEASEQUERYSTATUS
+    //18	DHCPTLS
     MessageType(unsigned char messageType) {
         this->code = 53;
         this->dataLength = sizeof(unsigned char);

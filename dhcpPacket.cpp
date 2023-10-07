@@ -1,19 +1,38 @@
 #include "dhcpPacket.h"
 unsigned int DhcpPacket::magicCookie = 0x63825363;
-DhcpPacket::DhcpPacket(unsigned char op, unsigned int transactionId, string clientIpAddr, string offeredIpAddr, string serverIpAddr, string gatewayIpAddr, string clientMacAddr, vector<DhcpOption*> dhcpOptions) {
-	this->op = op;
-	this->htype = 0x01;
-	this->hlen = 0x06;
-	this->hops = 0x00;
-	this->transactionId = transactionId;
-	this->secs = 0x0000;
-	this->flags = 0x0000;
-	this->clientIpAddr = clientIpAddr;
-	this->offeredIpAddr = offeredIpAddr;
-	this->serverIpAddr = serverIpAddr;
-	this->gatewayIpAddr = gatewayIpAddr;
-	this->clientMacAddr = clientMacAddr;
-	this->dhcpOptions = dhcpOptions;
+DhcpPacket::DhcpPacket() {
+    initPacket(0, 0, "0.0.0.0", "0.0.0.0", "0.0.0.0", "0.0.0.0", "00:00:00:00:00:00", vector<DhcpOption*>());
+}
+void DhcpPacket::initPacket(unsigned char op, unsigned int transactionId, string clientIpAddr, string offeredIpAddr, string serverIpAddr, string gatewayIpAddr, string clientMacAddr, vector<DhcpOption*>dhcpOptions) {
+    this->op = op;
+    this->htype = 0x01;
+    this->hlen = 0x06;
+    this->hops = 0x00;
+    this->transactionId = transactionId;
+    this->secs = 0x0000;
+    this->flags = 0x0000;
+    this->clientIpAddr = clientIpAddr;
+    this->offeredIpAddr = offeredIpAddr;
+    this->serverIpAddr = serverIpAddr;
+    this->gatewayIpAddr = gatewayIpAddr;
+    this->clientMacAddr = clientMacAddr;
+    if (DhcpOption::getMessageType(dhcpOptions) == 0) {
+        throw std::invalid_argument("packet must have a type");
+    }
+    else if (!DhcpOption::hasEnd(dhcpOptions)) {
+        dhcpOptions.push_back(new End());
+    }
+    this->dhcpOptions = dhcpOptions;
+}
+DhcpPacket::DhcpPacket(unsigned char op, unsigned int transactionId, string clientIpAddr, string offeredIpAddr, string serverIpAddr, string gatewayIpAddr, string clientMacAddr, vector<DhcpOption*>dhcpOptions) {
+    initPacket(op, transactionId, clientIpAddr, offeredIpAddr, serverIpAddr, gatewayIpAddr, clientMacAddr, dhcpOptions);
+}
+DhcpPacket::~DhcpPacket() {
+    while (!dhcpOptions.empty()) {
+        dhcpOptions.back()->~DhcpOption();
+        //delete dhcpOptions.back();
+        dhcpOptions.pop_back();
+    }
 }
 
 DhcpPacket* DhcpPacket::fromBytes(unsigned char* bytes) {
@@ -43,7 +62,7 @@ DhcpPacket* DhcpPacket::fromBytes(unsigned char* bytes) {
     }
     return new DhcpPacket(op, transactionId, clientIpAddr, offeredIpAddr, serverIpAddr, gatewayIpAddr, clientMacAddr, dhcpOptions);
 }
-unsigned char* DhcpPacket::toBytes(DhcpPacket dhcpPacket, unsigned char* output) {
+unsigned char* DhcpPacket::toBytes(DhcpPacket& dhcpPacket, unsigned char* output) {
     if (output == nullptr) return nullptr;
     unsigned char* current = output;
     *current = dhcpPacket.op;
@@ -79,7 +98,6 @@ unsigned char* DhcpPacket::toBytes(DhcpPacket dhcpPacket, unsigned char* output)
     for (int i = 0; i < 10+192; i++)
     {
         current[i] = 0x00;
-
     }
     current += 10+192;
     current[0] = (dhcpPacket.magicCookie & 0xff000000) >> 24;
@@ -90,7 +108,7 @@ unsigned char* DhcpPacket::toBytes(DhcpPacket dhcpPacket, unsigned char* output)
     DhcpOption::listToBytes(dhcpPacket.dhcpOptions, current);
     return output;
  }
-unsigned char* DhcpPacket::toBytes(DhcpPacket dhcpPacket) {
+unsigned char* DhcpPacket::toBytes(DhcpPacket& dhcpPacket) {
     return toBytes(dhcpPacket, new unsigned char[dhcpPacket.getLength()]);
 }
 unsigned char DhcpPacket::getMessageType(DhcpPacket dhcpPacket) {
